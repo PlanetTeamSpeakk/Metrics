@@ -3,7 +3,7 @@ from datetime import datetime
 from __main__ import creds
 
 def setup(register, db):
-    register("weather", 30 * 60, 5 * 60, read)
+    register("weather", 15 * 60, 5 * 60, read)
 
 def read(c):
     weather = requests.get(f"https://api.openweathermap.org/data/2.5/weather?lat={creds.LAT}&lon={creds.LON}&appid={creds.OWM_API_KEY}&units=metric").json()

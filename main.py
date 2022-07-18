@@ -36,6 +36,7 @@ def reload_module(module):
 
 def update_metrics():
     updated = False
+    db.check_reconnect()
     cursor = db.db.cursor()
 
     for module in metrics.values():
@@ -46,7 +47,7 @@ def update_metrics():
             value = None
 
             try:
-                value = metric["function"](c=cursor)
+                value = metric["function"](cursor)
             except Exception as e:
                 print(f"Error updating metric {metric['name']} of module {module['name']}: " + str(e))
                 metric["errored"] = True
@@ -61,7 +62,6 @@ def update_metrics():
             print(f"{time.ctime()} Updated metric {metric['name']}, value: {value}.")
 
     if updated:
-        db.check_reconnect()
         db.db.commit()
 
 for (dirpath, dirnames, filenames) in os.walk("metrics"):

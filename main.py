@@ -40,7 +40,7 @@ def update_metrics():
 
     for module in metrics.values():
         for metric in module["metrics"].values():
-            if time.time() - metric["last_updated"] < (metric["interval"] if not metric["errored"] else metric["error_interval"]):
+            if time.time() - metric["last_updated"] < ((metric["interval"] if not metric["errored"] else metric["error_interval"]) - 0.5):
                 continue
 
             value = None
@@ -75,4 +75,6 @@ if __name__ == "__main__":
     while True:
         start = time.time()
         update_metrics()
-        time.sleep(5 - (time.time() - start))
+        sleep = 5 - (time.time() - start)
+        if sleep > 0:
+            time.sleep(sleep)

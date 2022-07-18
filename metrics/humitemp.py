@@ -10,13 +10,12 @@ def setup(register, db):
     register("humidity", 30, 5, read_humi)
 
 def read_temp(c):
-    global dht, temp
+    global temp
     temp = dht.temperature
 
     return temp
 
 def read_humi(c):
-    global dht, temp
     humi = dht.humidity
     c.execute("INSERT INTO humitemp (temperature, humidity) VALUES (%s, %s);", (temp, humi))
 

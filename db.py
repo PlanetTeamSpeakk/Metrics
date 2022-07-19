@@ -1,8 +1,8 @@
 import time
 import mysql.connector as mysql
-import __main__
+from __main__ import creds
 
-db = mysql.connect(host="localhost", user="root", password=__main__.creds.DB_PASS, database="grafana")
+db = mysql.connect(host=creds.DB_HOST, user=creds.DB_USER, password=creds.DB_PASS, database=creds.DB_NAME)
 last_reconnect = time.time()
 
 def check_reconnect():

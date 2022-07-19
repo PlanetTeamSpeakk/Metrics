@@ -59,7 +59,7 @@ def update_metrics():
 
             updated = True
             metric["last_updated"] = time.time()
-            print(f"{time.ctime()} Updated metric {metric['name']}, value: {value}.")
+            print(f"{time.ctime()} Updated metric {metric['name']}, value: {value}")
 
     if updated:
         db.db.commit()

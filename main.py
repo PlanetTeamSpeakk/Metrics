@@ -18,7 +18,7 @@ def register_module(path):
         metrics[module_name]["metrics"][name] = {"name": name, "interval": interval, "error_interval": error_interval, "function": function, "last_updated": 0, "errored": False}
 
     module_name = path[len("metrics."):]
-    metrics[module_name] = {"name": module_name, "module": module, "register": register_metric, "metrics": {}}
+    metrics[module_name] = {"name": module_name, "module": module, "path": path.replace('.', '/') + ".py", "last_reload": time.time(), "register": register_metric, "metrics": {}}
 
     module.setup(register=register_metric, db=db.db)
     print(f"Registered module {module_name} with metrics {', '.join([metric for metric in metrics[module_name]['metrics']])}.")
@@ -40,6 +40,20 @@ def update_metrics():
     cursor = db.db.cursor()
 
     for module in metrics.values():
+        if os.path.getmtime(module["path"]) > module["last_reload"]:
+            print(f"Module {module['name']} changed, attempting reload!")
+
+            update_times = {metric: module["metrics"][metric]["last_updated"] for metric in module["metrics"]}
+            reload_module(module["name"])
+
+            for metric, updated in update_times.items():
+                if metric in module["metrics"]:
+                    module["metrics"][metric]["last_updated"] = updated
+
+            module["last_reload"] = time.time()
+
+            print(f"Reloaded module {module['name']}, metrics: {', '.join([metric for metric in module['metrics']])}.")
+
         for metric in module["metrics"].values():
             if time.time() - metric["last_updated"] < ((metric["interval"] if not metric["errored"] else metric["error_interval"]) - 0.5):
                 continue

@@ -13,3 +13,6 @@ def read(c):
     c.execute("INSERT INTO humitemp (temperature, humidity) VALUES (%s, %s);", (temp, humi))
 
     return {"temp": temp, "humi": humi}
+
+def on_reload():
+    dht.exit()

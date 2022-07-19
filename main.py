@@ -68,8 +68,8 @@ for (dirpath, dirnames, filenames) in os.walk("metrics"):
      if "__pycache__" in dirpath:
          continue
 
-     for file in [dirpath.replace('/', '.') + ('.' if not len(dirpath) == 0 else '') + f[:-3] for f in filter(lambda f: f.endswith(".py"), filenames)]:
-        register_module(file)
+     for f in filter(lambda f: f.endswith(".py"), filenames):
+        register_module(dirpath.replace('/', '.') + ('.' if not len(dirpath) == 0 else '') + f[:-3])
 
 if __name__ == "__main__":
     while True:

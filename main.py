@@ -40,7 +40,7 @@ def update_metrics():
     cursor = db.db.cursor()
 
     for module in metrics.values():
-        if os.path.getmtime(module["path"]) > module["last_reload"]:
+        if os.path.exists(module["path"]) and os.path.getmtime(module["path"]) > module["last_reload"]:
             print(f"Module {module['name']} changed, attempting reload!")
 
             update_times = {metric: module["metrics"][metric]["last_updated"] for metric in module["metrics"]}

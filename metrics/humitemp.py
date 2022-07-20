@@ -12,9 +12,11 @@ def init():
 def read(c):
     temp = dht.temperature
     humi = dht.humidity
-    c.execute("INSERT INTO humitemp (temperature, humidity) VALUES (%s, %s);", (temp, humi))
 
-    return {"temp": temp, "humi": humi}
+    def inserter():
+        c.execute("INSERT INTO humitemp (temperature, humidity) VALUES (%s, %s);", (temp, humi))
+
+    return ({"temp": temp, "humi": humi}, inserter)
 
 def on_reload():
     dht.exit()

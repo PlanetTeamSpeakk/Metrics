@@ -5,6 +5,8 @@ def setup(register, db):
 
 def read(c):
     co2 = mh_z19.read_co2valueonly(True)
-    c.execute("INSERT INTO co2 (co2) VALUES (%s);", (co2,))
 
-    return co2
+    def inserter():
+        c.execute("INSERT INTO co2 (co2) VALUES (%s);", (co2,))
+
+    return (co2, inserter)

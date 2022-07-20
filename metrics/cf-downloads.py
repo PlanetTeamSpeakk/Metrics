@@ -10,6 +10,8 @@ def read(c):
     global last_downloads
     data = requests.get("https://api.curseforge.com/v1/mods/250823", headers = {"Accept": "application/json", "x-api-key": __main__.creds.CF_API_KEY}).json()["data"]
     downloads = last_downloads = max(int(data["downloadCount"]), last_downloads)
-    c.execute("INSERT INTO cf_downloads (downloads) VALUES (%s);", (downloads,))
 
-    return downloads
+    def inserter():
+        c.execute("INSERT INTO cf_downloads (downloads) VALUES (%s);", (downloads,))
+
+    return (downloads, inserter)

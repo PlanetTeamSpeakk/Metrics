@@ -10,11 +10,11 @@ def read(c):
     main = weather["main"]
 
     def inserter():
-        c.execute("INSERT INTO weather (description, temp, feels_like, temp_min, temp_max, pressure, humidity, wind_speed, wind_angle, clouds, sunrise, sunset, timezone) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
+        c.execute("INSERT INTO weather (description, temp, feels_like, temp_min, temp_max, pressure, humidity, wind_speed, wind_angle, clouds, icon, sunrise, sunset, timezone) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
             (weather["weather"][0]["description"],
             main["temp"], main["feels_like"], main["temp_min"], main["temp_max"], main["pressure"], main["humidity"],
             weather["wind"]["speed"], weather["wind"]["deg"],
-            weather["clouds"]["all"],
+            weather["clouds"]["all"], weather["weather"][0]["icon"],
             datetime.utcfromtimestamp(weather["sys"]["sunrise"]), datetime.utcfromtimestamp(weather["sys"]["sunset"]), weather["timezone"]))
 
     return (weather, inserter)

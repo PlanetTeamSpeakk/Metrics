@@ -5,9 +5,8 @@ import os
 import os.path
 import importlib
 import traceback
-from colorama import Fore, Style, init
+from colorama import Fore, Back, Style, init
 
-os.chdir(os.path.dirname(os.path.abspath(__file__))) # Set working directory to this script's directory for relative paths to work.
 init() # Init Colorama
 metrics = {}
 
@@ -19,20 +18,17 @@ def register_module(path):
         log(f"Module {path} has no setup function.", Fore.RED)
         has_setup = False
 
-    if hasattr(module, "init"):
-        module.init()
-
     def register_metric(name, interval, error_interval, function, *args, **kwargs):
         metrics[module_name]["metrics"][name] = {"name": name, "interval": interval, "error_interval": error_interval, "function": function, "last_updated": 0, "errored": False}
 
     module_name = path[len("metrics."):]
     metrics[module_name] = {"name": module_name, "module": module, "path": path.replace('.', '/') + ".py", "last_reload": time.time(), "register": register_metric, "metrics": {}}
 
-    if not has_setup:
-        return # Module might be being worked on right now, we'll just leave it in in case it changes.
+    if not has_setup: # Module might be being worked on right now, we'll leave it in, see if it changes.
+        return
 
     module.setup(register=register_metric, db=db.db)
-    log(f"Registered module {module_name} with metrics {', '.join([metric for metric in metrics[module_name]['metrics']])}.", Fore.CYAN)
+    print(f"{Fore.CYAN}{time.ctime()}Registered module {module_name} with metrics {', '.join([metric for metric in metrics[module_name]['metrics']])}.{Style.RESET_ALL}")
 
 def reload_module(module):
     module = metrics[module]
@@ -42,13 +38,6 @@ def reload_module(module):
 
     importlib.reload(module["module"])
 
-    if hasattr(module["module"], "init"):
-        module["module"].init()
-
-    if not hasattr(module["module"], "setup"):
-        log(f"Setup function of module {module['name']} disappeared after reload! Not resetting its metrics.", Fore.RED)
-        return
-
     module["metrics"] = {}
     module["module"].setup(register=module["register"], db=db.db)
 
@@ -57,7 +46,7 @@ def update_metrics():
     db.check_reconnect()
     cursor = db.db.cursor()
 
-    for module in list(metrics.values()):
+    for module in list(metrics.values()): # We potentially delete items while iterating.
         if check_delete(module):
             continue
 
@@ -72,7 +61,7 @@ def update_metrics():
             try:
                 value = metric["function"](cursor)
             except Exception as e:
-                log(f"Error updating metric {metric['name']} of module {module['name']}: " + str(e), Fore.RED)
+                log("Error updating metric {metric['name']} of module {module['name']}: " + str(e), Fore.RED)
                 metric["errored"] = True
                 continue
             metric["errored"] = False
@@ -82,37 +71,16 @@ def update_metrics():
 
             updated = True
             metric["last_updated"] = time.time()
-            log(f"Updated metric {metric['name']}, value: {value}")
+            print(f"{time.ctime()} Updated metric {metric['name']}, value: {value}")
 
     if updated:
         db.db.commit()
-
-def check_new_modules():
-    for (dirpath, dirnames, filenames) in os.walk("metrics"):
-         if "__pycache__" in dirpath:
-             continue
-
-         for f in filter(lambda f: f.endswith(".py"), filenames):
-            path = dirpath + ('/' if not len(dirpath) == 0 else '') + f
-            for module in metrics.values():
-                if module["path"] == path:
-                    break
-            else:
-                register_module(path.replace('/', '.')[:-3])
-
-def check_delete(module):
-    if os.path.exists(module["path"]):
-        return False
-
-    log(f"Module {module['name']} was deleted, unloading...", Fore.RED)
-    del metrics[module["name"]]
-    return True
 
 def check_reload(module):
     if os.path.getmtime(module["path"]) <= module["last_reload"]:
         return
 
-    log(f"Module {module['name']} changed, attempting reload!", Fore.YELLOW)
+    print(f"{Fore.YELLOW}{time.ctime()} Module {module['name']} changed, attempting reload!{Style.RESET_ALL}")
 
     update_times = {metric: module["metrics"][metric]["last_updated"] for metric in module["metrics"]}
     reload_module(module["name"])
@@ -122,17 +90,29 @@ def check_reload(module):
             module["metrics"][metric]["last_updated"] = updated
 
     module["last_reload"] = time.time()
-    log(f"Reloaded module {module['name']}, metrics: {', '.join([metric for metric in module['metrics']])}.", Fore.CYAN)
+    print(f"{Fore.CYAN}{time.ctime()} Reloaded module {module['name']}, metrics: {', '.join([metric for metric in module['metrics']])}.{Style.RESET_ALL}")
+
+def chech_delete(module):
+    if os.path.exists(module["path"]):
+        return False
+
+    print(f"{Fore.RED}{time.ctime} Module {module['name']} was deleted, unloading.{Style.RESET_ALL}")
+    del metrics[module["name"]]
+    return True
 
 def log(msg, colour=None):
-    print(f"{colour if colour else ''}{time.ctime()} {msg}{Style.RESET_ALL if colour else ''}")
+    print(time.ctime() + (colour if colour else '') + ' ' + msg + (Style.RESET_ALL if colour else ''))
 
-check_new_modules()
+for (dirpath, dirnames, filenames) in os.walk("metrics"):
+     if "__pycache__" in dirpath:
+         continue
+
+     for f in filter(lambda f: f.endswith(".py"), filenames):
+        register_module(dirpath.replace('/', '.') + ('.' if not len(dirpath) == 0 else '') + f[:-3])
 
 if __name__ == "__main__":
     while True:
         start = time.time()
-        check_new_modules()
         update_metrics()
         sleep = 5 - (time.time() - start)
         if sleep > 0:

@@ -2,10 +2,12 @@ import adafruit_dht
 import board
 import json
 
-dht = adafruit_dht.DHT22(board.D18)
-
 def setup(register, db):
     register("humitemp", 30, 5, read)
+
+def init():
+    global dht
+    dht = adafruit_dht.DHT22(board.D18)
 
 def read(c):
     temp = dht.temperature

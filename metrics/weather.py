@@ -13,6 +13,6 @@ def read(c):
         main["temp"], main["feels_like"], main["temp_min"], main["temp_max"], main["pressure"], main["humidity"],
         weather["wind"]["speed"], weather["wind"]["deg"],
         weather["clouds"]["all"],
-        datetime.utcfromtimestamp(weather["sys"]["sunrise"]), datetime.utcfromtimestamp(weather["sys"]["sunset"])), weather["timezone"])
+        datetime.utcfromtimestamp(weather["sys"]["sunrise"]), datetime.utcfromtimestamp(weather["sys"]["sunset"]), weather["timezone"]))
 
     return weather

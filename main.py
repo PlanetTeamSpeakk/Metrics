@@ -5,10 +5,12 @@ import os
 import os.path
 import importlib
 import traceback
+from concurrent.futures import ThreadPoolExecutor, wait
 from colorama import Fore, Style, init
 
 os.chdir(os.path.dirname(os.path.abspath(__file__))) # Set working directory to this script's directory for relative paths to work.
 init() # Init Colorama
+pool = ThreadPoolExecutor()
 metrics = {}
 
 def register_module(path):
@@ -23,7 +25,7 @@ def register_module(path):
         module.init()
 
     def register_metric(name, interval, error_interval, function, *args, **kwargs):
-        metrics[module_name]["metrics"][name] = {"name": name, "interval": interval, "error_interval": error_interval, "function": function, "last_updated": 0, "errored": False}
+        metrics[module_name]["metrics"][name] = {"name": name, "module": module_name, "interval": interval, "error_interval": error_interval, "function": function, "last_updated": 0, "errored": False}
 
     module_name = path[len("metrics."):]
     metrics[module_name] = {"name": module_name, "module": module, "path": path.replace('.', '/') + ".py", "last_reload": time.time(), "register": register_metric, "metrics": {}}
@@ -56,6 +58,7 @@ def update_metrics():
     updated = False
     db.check_reconnect()
     cursor = db.db.cursor()
+    tasks = {}
 
     for module in list(metrics.values()):
         if check_delete(module):
@@ -67,20 +70,35 @@ def update_metrics():
             if time.time() - metric["last_updated"] < ((metric["interval"] if not metric["errored"] else metric["error_interval"]) - 0.5):
                 continue
 
-            value = None
+            task = pool.submit(metric["function"], cursor)
+            tasks[task] = metric
 
-            try:
-                value = metric["function"](cursor)
-            except Exception as e:
-                log(f"Error updating metric {metric['name']} of module {module['name']}: " + str(e), Fore.RED)
-                metric["errored"] = True
-                continue
-            metric["errored"] = False
+    done, not_done = wait(tasks.keys())
+    if len(not_done) > 0:
+        log(f"{len(not_done)} task(s) could not finish.", Fore.YELLOW)
 
-            if value is None:
-                continue
+    for task in done:
+        metric = tasks[task]
+        if task.exception():
+            log(f"Error updating metric {metric['name']} of module {metric['module']}: " + str(task.exception()), Fore.RED)
+            metric["errored"] = True
+            continue
 
+        metric["errored"] = False
+        value = inserter = None
+        result = task.result()
+
+        if isinstance(result, tuple):
+            value, inserter = result
+        else:
+            value = result
+
+        if value:
             updated = True
+
+            if inserter:
+                inserter()
+
             metric["last_updated"] = time.time()
             log(f"Updated metric {metric['name']}, value: {value}")
 

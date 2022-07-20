@@ -1,3 +1,4 @@
 creds.py
 *.swp
 __pycache__/
+*.save # Nano

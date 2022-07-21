@@ -34,7 +34,7 @@ def register_module(path):
         return # Module might be being worked on right now, we'll just leave it in in case it changes.
 
     module.setup(register=register_metric, db=db.db)
-    log(f"Registered module {module_name} with metrics {', '.join([metric for metric in metrics[module_name]['metrics']])}.", Fore.CYAN)
+    log(f"Registered module {module_name} with metrics {join_nicely(metrics[module_name]['metrics'].keys())}.", Fore.CYAN)
 
 def reload_module(module):
     module = metrics[module]
@@ -140,10 +140,19 @@ def check_reload(module):
             module["metrics"][metric]["last_updated"] = updated
 
     module["last_reload"] = time.time()
-    log(f"Reloaded module {module['name']}, metrics: {', '.join([metric for metric in module['metrics']])}.", Fore.CYAN)
+    log(f"Reloaded module {module['name']}, metrics: {join_nicely(module['metrics'].keys())}.", Fore.CYAN)
 
 def log(msg, colour=None):
     print(f"{colour if colour else ''}{time.ctime()} {msg}{Style.RESET_ALL if colour else ''}")
+
+def join_nicely(col):
+    s = ""
+    l = len(col)
+
+    for i, e in enumerate(col):
+        s += str(e) + (', ' if i < l - 3 else ' and ' if i == l - 2 else '')
+
+    return s
 
 check_new_modules()
 

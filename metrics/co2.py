@@ -1,12 +1,16 @@
 import mh_z19
+from objects import Module, Metric
 
-def setup(register, db):
-    register("co2", 30, 5, read)
+class CO2(Module):
+    def __init__(self):
+        super().__init__("CO2")
 
-def read(c):
-    co2 = mh_z19.read_co2valueonly(True)
+    def setup(self):
+        self.register("co2", 30, 5, self.read, self.insert)
 
-    def inserter():
-        c.execute("INSERT INTO co2 (co2) VALUES (%s);", (co2,))
+    def read(self):
+        co2 = mh_z19.read_co2valueonly(True)
+        return co2
 
-    return (co2, inserter)
+    def insert(self, c, value):
+        c.execute("INSERT INTO co2 (co2) VALUES (%s);", (value,))

@@ -6,11 +6,11 @@ class PiTemp(Module):
         super().__init__("Pi Temp")
 
     def setup(self):
-        self.register("pi-temp", 30, 5, self.read, self.insert)
+        self.register("pi-temp", 15, 5, self.read, self.insert)
 
     def read(self):
         i = 5
-        pi_temp = round(sum(float(subprocess.check_output("/opt/vc/bin/vcgencmd measure_temp", shell=True)[5:-3]) for x in range(i)) / i, 1)
+        pi_temp = round(sum(float(subprocess.check_output("/opt/vc/bin/vcgencmd measure_temp && sleep 0.5", shell=True)[5:-3]) for x in range(i)) / i, 1)
 
         return pi_temp
 

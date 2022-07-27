@@ -6,7 +6,7 @@ class CO2(Module):
         super().__init__("CO2")
 
     def setup(self):
-        self.register("co2", 30, 5, self.read, self.insert)
+        self.register("co2", 15, 5, self.read, self.insert)
 
     def read(self):
         co2 = mh_z19.read_co2valueonly(True)

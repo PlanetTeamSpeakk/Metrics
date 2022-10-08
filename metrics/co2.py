@@ -9,8 +9,7 @@ class CO2(Module):
         self.register("co2", 15, 5, self.read, self.insert)
 
     def read(self):
-        co2 = mh_z19.read_co2valueonly(True)
-        return co2
+        return mh_z19.read_co2valueonly(True)
 
     def insert(self, c, value):
         c.execute("INSERT INTO co2 (co2) VALUES (%s);", (value,))

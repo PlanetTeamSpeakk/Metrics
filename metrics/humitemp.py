@@ -18,12 +18,6 @@ class HumiTemp(MeasurableModule):
 
         return {"temp": temp, "humi": humi}
 
-    def read_temp(self, measurement):
-        return measurement["temp"]
-
-    def read_humi(self, measurement):
-        return measurement["humi"]
-
     def insert(self, c, value):
         c.execute("INSERT INTO humitemp (temperature, humidity) VALUES (%s, %s);", (value["temp"], value["humi"]))
 

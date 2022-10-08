@@ -136,7 +136,11 @@ def update_metrics():
 
     if updated:
         for inserter, value in inserters:
-            inserter(cursor, value)
+            try:
+                inserter(cursor, value)
+            except Exception as e:
+                log(f"Error inserting data for inserter {str(inserter)}: {str(e)}", Fore.RED)
+                traceback.print_exc()
 
         db.db.commit()
 

@@ -1,10 +1,15 @@
 import requests
-from __main__ import creds
+from __main__ import creds, db
 from objects import MeasurableModule
 
 class Power(MeasurableModule):
     def __init__(self):
-        super().__init__("Power", 15, 5)
+        self.interval = 15
+        super().__init__("Power", self.interval, 5)
+
+        c = db.db.cursor()
+        c.execute("SELECT MAX(used) FROM power;")
+        self.used = c.fetchall()[0][0]
 
     def setup(self):
         self.mregister("power-consumption", lambda m: m["power"])
@@ -18,4 +23,6 @@ class Power(MeasurableModule):
         return data
 
     def insert(self, c, value):
-        c.execute("INSERT INTO power (power_use, total) VALUES (%s, %s);", (value["power"], value["total"]))
+        # We don't use the 'total' field in the response data because it resets upon power loss.
+        self.used += value["power"] * (self.interval / 60 / 60) / 1000
+        c.execute("INSERT INTO power (power_use, used) VALUES (%s, %s);", (value["power"], self.used))

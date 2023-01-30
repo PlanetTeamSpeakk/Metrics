@@ -10,7 +10,7 @@ class CFDownloads(Module):
         self.last_downloads = 0
 
     def setup(self):
-        self.register("cf-downloads", 20 * 60, 5 * 60, self.read, self.insert)
+        self.register("cf-downloads", 60 * 60, 5 * 60, self.read, self.insert)
 
     def read(self):
         data = requests.get("https://api.curseforge.com/v1/mods/250823", headers = {"Accept": "application/json", "x-api-key": __main__.creds.CF_API_KEY}).json()["data"]

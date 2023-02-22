@@ -166,7 +166,13 @@ if __name__ == "__main__":
     while True:
         start = time.time()
         check_new_modules()
-        update_metrics()
+
+        try:
+            update_metrics()
+        except Exception as e:
+            log(f"An error occurred while updating metrics. Assuming database failure. Reconnecting...", Fore.RED)
+            db.connect()
+
         sleep = 5 - (time.time() - start)
         if sleep > 0:
             time.sleep(sleep)

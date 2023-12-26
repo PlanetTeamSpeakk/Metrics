@@ -1,6 +1,5 @@
 import creds
 import time
-import db
 import os
 import os.path
 import importlib
@@ -10,6 +9,7 @@ from threading import Lock
 from colorama import Fore, Style, init
 from util import *
 from objects import *
+import prometheus_client
 
 os.chdir(os.path.dirname(os.path.abspath(__file__))) # Set working directory to this script's directory for relative paths to work.
 init() # Init Colorama
@@ -38,13 +38,11 @@ def register_module(path):
 
 def update_metrics():
     updated = False
-    db.check_reconnect()
-    cursor = db.db.cursor()
-    inserters = []
+    setters = []
     tasks = {}
     mtasks = {}
     task_lock = Lock()
-    inserter_lock = Lock()
+    setter_lock = Lock()
 
     for module in list(modules.values()):
         if module.check_delete():
@@ -59,9 +57,9 @@ def update_metrics():
                     value = metric.update(measurement)
 
                     if value is not None:
-                        inserter_lock.acquire()
-                        inserters.append((metric.insert, value))
-                        inserter_lock.release()
+                        setter_lock.acquire()
+                        setters.append((metric.set, value))
+                        setter_lock.release()
 
                     return value
 
@@ -90,9 +88,9 @@ def update_metrics():
                 measurement = module.module.measure()
                 updater(measurement)
 
-                inserter_lock.acquire()
-                inserters.append((module.module.insert, measurement))
-                inserter_lock.release()
+                setter_lock.acquire()
+                setters.append((module.module.set, measurement))
+                setter_lock.release()
 
                 return measurement
 
@@ -135,14 +133,12 @@ def update_metrics():
                 log(f"Updated metric {measurable.name} from module {measurable.module}, value: {value}")
 
     if updated:
-        for inserter, value in inserters:
+        for setter, value in setters:
             try:
-                inserter(cursor, value)
+                setter(value)
             except Exception as e:
-                log(f"Error inserting data for inserter {str(inserter)}: {str(e)}", Fore.RED)
+                log(f"Error inserting data for setter {str(setter)}: {str(e)}", Fore.RED)
                 traceback.print_exc()
-
-        db.db.commit()
 
 def should_update(measurable):
     return isinstance(measurable, Metric) and measurable.from_measurement and should_update(modules[container_names[measurable.module]].module) or time.time() - measurable.last_updated >= ((measurable.interval if not measurable.errored else measurable.error_interval) - 0.5)
@@ -163,15 +159,18 @@ def check_new_modules():
 check_new_modules()
 
 if __name__ == "__main__":
+    # Unregister the default metrics as we are not interested in any of those.
+    prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
+    prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
+    prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
+
+    prometheus_client.start_http_server(8000)
+
     while True:
         start = time.time()
         check_new_modules()
 
-        try:
-            update_metrics()
-        except Exception as e:
-            log(f"An error occurred while updating metrics. Assuming database failure. Reconnecting...", Fore.RED)
-            db.connect()
+        update_metrics()
 
         sleep = 5 - (time.time() - start)
         if sleep > 0:

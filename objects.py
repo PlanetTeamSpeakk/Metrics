@@ -22,7 +22,7 @@ class Measurable(ABC):
     def update(self, measurement=None):
         pass
 
-    def insert(self, cursor, value):
+    def set(self, value):
         pass
 
 class Metric(Measurable):
@@ -36,9 +36,9 @@ class Metric(Measurable):
     def update(self, measurement=None):
         return self.function(*([measurement] if self.from_measurement else []))
 
-    def insert(self, cursor, value):
+    def set(self, value):
         if self.inserter:
-            self.inserter(cursor, value)
+            self.inserter(value)
 
 class ModuleContainer:
     def __init__(self, name, module, path, pymodule):
@@ -48,10 +48,10 @@ class ModuleContainer:
         self.pymodule = pymodule
         self.last_reload = time.time()
 
-    def update(self, pool, cursor):
+    def update(self, pool):
         tasks = []
         for metric in self.metrics.values():
-            tasks.append(metric.update, cursor)
+            tasks.append(metric.update)
 
     def check_delete(self):
         if os.path.exists(self.path):
@@ -144,7 +144,7 @@ class MeasurableModule(Module, Measurable): # For modules that measure multiple 
         pass
 
     @abstractmethod
-    def insert(self, cursor, measurement):
+    def set(self, measurement):
         pass
 
     def mregister(self, name, function, inserter=None):

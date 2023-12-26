@@ -2,11 +2,14 @@ import adafruit_dht
 import board
 import json
 from objects import MeasurableModule
+from prometheus_client import Gauge
 
 class HumiTemp(MeasurableModule):
     def __init__(self):
         super().__init__("HumiTemp", 30, 5)
         self.dht = adafruit_dht.DHT22(board.D18)
+        self.temp_gauge = Gauge("temperature", "The temperature in my room in degrees Celsius")
+        self.humi_gauge = Gauge("humidity", "The humidity in my room in percent")
 
     def setup(self):
         self.mregister("temperature", lambda m: m["temp"])
@@ -18,8 +21,9 @@ class HumiTemp(MeasurableModule):
 
         return {"temp": temp, "humi": humi}
 
-    def insert(self, c, value):
-        c.execute("INSERT INTO humitemp (temperature, humidity) VALUES (%s, %s);", (value["temp"], value["humi"]))
+    def set(self, value):
+        self.temp_gauge.set(value["temp"])
+        self.humi_gauge.set(value["humi"])
 
     def on_reload(self):
         self.dht.exit()

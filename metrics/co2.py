@@ -11,7 +11,7 @@ class CO2(Module):
         self.register("co2", 15, 5, self.read, self.set)
 
     def read(self):
-        return mh_z19.read_co2valueonly(True)
+        return mh_z19.read_co2valueonly()
 
     def set(self, value):
         self.gauge.set(value)

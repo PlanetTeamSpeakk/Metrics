@@ -12,7 +12,7 @@ class PiTemp(Module):
 
     def read(self):
         i = 5
-        pi_temp = round(sum(float(subprocess.check_output("/opt/vc/bin/vcgencmd measure_temp && sleep 0.5", shell=True)[5:-3]) for x in range(i)) / i, 1)
+        pi_temp = round(sum(float(subprocess.check_output("vcgencmd measure_temp && sleep 0.5", shell=True)[5:-3]) for x in range(i)) / i, 1)
 
         return pi_temp
 

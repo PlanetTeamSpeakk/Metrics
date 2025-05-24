@@ -164,6 +164,10 @@ if __name__ == "__main__":
     prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
     prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 
+    # Ensure metric values are up-to-date before starting the http server.
+    # Not doing this will result in the initial readings all being 0.
+    update_metrics()
+
     prometheus_client.start_http_server(8000)
 
     while True:
@@ -172,6 +176,7 @@ if __name__ == "__main__":
 
         update_metrics()
 
+        # Sleep for up to 5 seconds, depending how long the measurements took.
         sleep = 5 - (time.time() - start)
         if sleep > 0:
             time.sleep(sleep)
